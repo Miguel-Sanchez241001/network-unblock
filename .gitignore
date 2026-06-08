@@ -1,0 +1,14 @@
+target/
+*.class
+*.jar
+*.log
+.idea/
+*.iml
+.settings/
+.project
+.classpath
+.vscode/
+*.swp
+*~
+.m2/
+node_modules/

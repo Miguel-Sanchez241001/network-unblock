@@ -1,0 +1,24 @@
+{
+  "patterns": ["steam", "valve", "openai", "chatgpt", "anthropic", "claude"],
+  "domains": {
+    "store.steampowered.com": ["23.57.121.205"],
+    "api.steampowered.com": ["96.6.206.56"],
+    "steamcommunity.com": ["96.6.206.56"],
+    "www.steamcommunity.com": ["96.6.206.56"],
+    "login.steampowered.com": ["96.6.206.56"],
+    "help.steampowered.com": ["96.6.206.56"],
+    "steam.tv": ["23.196.72.39"],
+    "checkout.steampowered.com": ["96.6.206.56"],
+    "cm0.steampowered.com": ["162.254.195.44", "162.254.193.6"],
+    "cdn.cloudflare.steamstatic.com": ["200.60.190.10", "200.60.190.8"],
+    "cdn.akamai.steamstatic.com": ["200.60.190.10", "200.60.190.8"],
+    "community.cloudflare.steamstatic.com": ["200.60.190.10", "200.60.190.19"],
+    "store.cloudflare.steamstatic.com": ["200.60.190.24", "200.60.190.27"],
+    "shared.cloudflare.steamstatic.com": ["200.60.190.26", "200.60.190.27"],
+    "client-update.akamai.steamstatic.com": ["200.60.190.224", "200.60.190.123"],
+    "avatars.steamstatic.com": ["199.232.211.52", "199.232.215.52"],
+    "steambroadcast.akamaized.net": ["200.60.190.19", "200.60.190.24"],
+    "steamcdn-a.akamaihd.net": ["200.60.190.10"],
+    "lancache.steamcontent.com": ["155.133.255.9", "155.133.255.8"]
+  }
+}
