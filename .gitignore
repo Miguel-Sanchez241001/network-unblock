@@ -1,14 +1,28 @@
-target/
+# Java / Maven
+java/target/
+dependency-reduced-pom.xml
 *.class
 *.jar
-*.log
+.m2/
+
+# Electron / Node
+node_modules/
+package-lock.json
+
+# Editores
 .idea/
 *.iml
+.vscode/
 .settings/
 .project
 .classpath
-.vscode/
+
+# OS / misc
+*.log
 *.swp
 *~
-.m2/
-node_modules/
+nul
+
+# Artefactos distribuibles (generados, no versionados)
+*.zip
+network-unblock/

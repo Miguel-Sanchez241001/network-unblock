@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>AI Proxy</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #1c1c1c;
+  color: #e0e0e0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Header */
+#header {
+  background: #121212;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid #2e2e2e;
+  flex-shrink: 0;
+}
+#dot {
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  background: #555;
+  flex-shrink: 0;
+  transition: background .3s, box-shadow .3s;
+}
+#dot.on { background: #32d250; box-shadow: 0 0 7px #32d250aa; }
+#title-block { flex: 1; }
+#title-block strong { font-size: 14px; }
+#subtitle { font-size: 11px; color: #555; margin-top: 1px; }
+#subtitle.on { color: #32d250; }
+#btn {
+  padding: 6px 16px;
+  border: none; border-radius: 4px;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer;
+  background: #28a745; color: #fff;
+  transition: background .2s, transform .1s;
+  white-space: nowrap;
+}
+#btn:active { transform: scale(.97); }
+#btn.stop { background: #b42828; }
+
+/* Tabs */
+#tabs {
+  display: flex;
+  background: #151515;
+  border-bottom: 1px solid #252525;
+  flex-shrink: 0;
+}
+.tab {
+  padding: 7px 16px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #555;
+  border-bottom: 2px solid transparent;
+  transition: color .2s;
+}
+.tab.active { color: #ccc; border-bottom-color: #4dabf7; }
+.tab-action {
+  margin-left: auto;
+  padding: 7px 12px;
+  font-size: 11px;
+  color: #444;
+  cursor: pointer;
+}
+.tab-action:hover { color: #888; }
+
+/* Panels */
+#panels { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+.panel { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+.panel.active { display: flex; }
+
+/* Log */
+#log {
+  flex: 1;
+  overflow-y: auto;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 11.5px;
+  padding: 5px 8px;
+  line-height: 1.6;
+  background: #0a0a0a;
+  user-select: text;
+}
+.entry { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ts { color: #383838; margin-right: 5px; }
+.c-ai      { color: #4db8ff; }
+.c-pass    { color: #484848; }
+.c-frag    { color: #ffa93a; }
+.c-error   { color: #ff5555; }
+.c-timeout { color: #ff8c28; }
+.c-doh     { color: #7de07d; }
+.c-ok      { color: #32d250; }
+.c-warn    { color: #ff8c28; }
+.c-info    { color: #aaa; }
+
+/* Domains */
+#dom-wrap { flex: 1; overflow: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 11.5px; font-family: Consolas, monospace; }
+th {
+  background: #141414; color: #666;
+  text-align: left; padding: 5px 10px;
+  position: sticky; top: 0; z-index: 1;
+  font-weight: 500;
+}
+td { padding: 4px 10px; border-bottom: 1px solid #1e1e1e; }
+tr:hover td { background: #181818; }
+.t-ai { color: #4db8ff; }
+
+/* Statusbar */
+#statusbar {
+  background: #111;
+  border-top: 1px solid #222;
+  padding: 3px 12px;
+  font-size: 11px; color: #444;
+  display: flex; justify-content: space-between;
+  flex-shrink: 0;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2e2e2e; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div id="dot"></div>
+  <div id="title-block">
+    <strong>AI Proxy</strong>
+    <div id="subtitle">Iniciando...</div>
+  </div>
+  <button id="btn" onclick="toggle()">Iniciar</button>
+</div>
+
+<div id="tabs">
+  <div class="tab active" onclick="showTab('log-panel', this)">Logs</div>
+  <div class="tab" onclick="showTab('dom-panel', this)">Dominios (<span id="dom-count">0</span>)</div>
+  <span class="tab-action" onclick="clearAll()" title="Limpiar logs y dominios">Limpiar</span>
+</div>
+
+<div id="panels">
+  <div id="log-panel" class="panel active">
+    <div id="log"></div>
+  </div>
+  <div id="dom-panel" class="panel">
+    <div id="dom-wrap">
+      <table>
+        <thead><tr><th>Dominio</th><th>IP destino</th><th>Conex.</th><th>Tipo</th></tr></thead>
+        <tbody id="dom-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="statusbar">
+  <span>Puerto 8889</span>
+  <span id="sb-right">Listo</span>
+</div>
+
+<script>
+const { ipcRenderer } = require('electron')
+
+let active = false
+let logCount = 0
+const MAX_LOGS = 1000
+
+function toggle() { ipcRenderer.send('toggle') }
+function clearAll() { ipcRenderer.send('clear-logs') }
+
+function showTab(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'))
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+  document.getElementById(id).classList.add('active')
+  el.classList.add('active')
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+}
+
+function updateHeader() {
+  document.getElementById('dot').className = active ? 'on' : ''
+  const sub = document.getElementById('subtitle')
+  sub.textContent = active ? 'Activo — 127.0.0.1:8889' : 'Inactivo'
+  sub.className = active ? 'on' : ''
+  const btn = document.getElementById('btn')
+  btn.textContent = active ? 'Detener' : 'Iniciar'
+  btn.className = active ? 'stop' : ''
+}
+
+function renderDomains(list) {
+  const tbody = document.getElementById('dom-body')
+  tbody.innerHTML = ''
+  const sorted = [...list].sort((a, b) => a.host.localeCompare(b.host))
+  for (const d of sorted) {
+    const tr = document.createElement('tr')
+    const cls = d.type === 'AI' ? 't-ai' : ''
+    tr.innerHTML =
+      `<td class="${cls}">${esc(d.host)}</td>` +
+      `<td>${esc(d.ip)}</td>` +
+      `<td>${d.count}</td>` +
+      `<td class="${cls}">${esc(d.type)}</td>`
+    tbody.appendChild(tr)
+  }
+  const n = list.length
+  document.getElementById('dom-count').textContent = n
+  document.getElementById('sb-right').textContent =
+    `${n} dominio${n !== 1 ? 's' : ''} | ${active ? 'Activo' : 'Detenido'}`
+}
+
+// Eventos desde el proceso principal
+ipcRenderer.on('log', (_, { text, type, ts }) => {
+  const log = document.getElementById('log')
+  // Recortar buffer si crece demasiado
+  if (logCount >= MAX_LOGS) {
+    log.firstChild && log.removeChild(log.firstChild)
+    logCount--
+  }
+  const div = document.createElement('div')
+  div.className = 'entry'
+  div.innerHTML = `<span class="ts">${ts}</span><span class="c-${type}">${esc(text)}</span>`
+  log.appendChild(div)
+  logCount++
+  // Auto-scroll solo si el usuario no está mirando arriba
+  if (log.scrollHeight - log.scrollTop - log.clientHeight < 60) {
+    log.scrollTop = log.scrollHeight
+  }
+})
+
+ipcRenderer.on('state', (_, { active: a, domains }) => {
+  active = a
+  updateHeader()
+  renderDomains(domains)
+})
+
+ipcRenderer.on('domains', (_, list) => renderDomains(list))
+
+ipcRenderer.on('clear', () => {
+  document.getElementById('log').innerHTML = ''
+  logCount = 0
+  renderDomains([])
+})
+
+// Estado inicial
+ipcRenderer.invoke('get-state').then(({ active: a, domains }) => {
+  active = a
+  updateHeader()
+  renderDomains(domains)
+})
+</script>
+</body>
+</html>

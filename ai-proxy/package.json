@@ -1,0 +1,12 @@
+{
+  "name": "ai-proxy",
+  "version": "1.0.0",
+  "description": "AI Proxy — ChatGPT y Claude en redes corporativas bloqueadas",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "electron": "^32.0.0"
+  }
+}
